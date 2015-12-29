@@ -30,10 +30,13 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
 import tachyon.TachyonURI;
+import tachyon.client.ClientContext;
 import tachyon.client.file.FileInStream;
 import tachyon.client.file.FileOutStream;
 import tachyon.client.file.TachyonFile;
 import tachyon.client.file.TachyonFileSystem;
+import tachyon.client.file.options.OutStreamOptions;
+import tachyon.client.file.options.MkdirOptions;
 import tachyon.exception.FileAlreadyExistsException;
 import tachyon.exception.FileDoesNotExistException;
 import tachyon.exception.InvalidPathException;
@@ -115,9 +118,11 @@ public final class TachyonFuseFs extends FuseStubFS {
 
     try {
 
+      OutStreamOptions oOutStreamOptions = new OutStreamOptions.Builder(ClientContext.getConf()).build();
+
       final OpenFileEntry ofe = new OpenFileEntry();
       ofe.in = Optional.empty();
-      ofe.out = Optional.of(mTFS.getOutStream(turi));
+      ofe.out = Optional.of(mTFS.getOutStream(turi, oOutStreamOptions));
       LOG.debug("Tachyon OutStream created for {}", path);
 
       synchronized (mOpenFilesLock) {
@@ -244,7 +249,8 @@ public final class TachyonFuseFs extends FuseStubFS {
     LOG.trace("mkdir({}) [Tachyon: {}]", path, turi);
     LOG.warn("{}: mode is ignored in tachyon-fuse", path);
     try {
-      mTFS.mkdir(turi);
+      MkdirOptions oMkdirOptions = new MkdirOptions.Builder(ClientContext.getConf()).build();
+      mTFS.mkdir(turi, oMkdirOptions);
     } catch(FileAlreadyExistsException e) {
       LOG.debug("Cannot make dir. {} already exists", path, e);
       ret = ErrorCodes.EEXIST();
